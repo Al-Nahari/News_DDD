@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import datetime
 from django.db.models import Q, Count, Sum
 
-from accounts.models import User, Author
+from accounts.models import User, Author  # noqa: F401 (Author used by AuthorsAPIView)
 
 from .models import Article, Category, Tag, Event
 
@@ -23,10 +23,13 @@ class ArticleListAPIView(View):
         search = request.GET.get('q')
         is_breaking = request.GET.get('is_breaking')
         is_featured = request.GET.get('is_featured')
+        slug = request.GET.get('slug')
         
         articles = Article.objects.filter(published_at__lte=timezone.now())
         
         # Apply filters
+        if slug:
+            articles = articles.filter(slug=slug)
         if category:
             articles = articles.filter(category__slug=category)
         if tag:
@@ -343,6 +346,26 @@ class TagsAPIView(View):
             })
         
         return JsonResponse({'tags': data, 'count': len(data)}, status=200)
+
+
+class AuthorsAPIView(View):
+    """API View for authors - GET /api/authors/"""
+
+    def get(self, request):
+        authors = Author.objects.all()
+
+        data = []
+        for author in authors:
+            data.append({
+                'id': author.id,
+                'name': author.name,
+                'avatar': author.avatar,
+                'bio': author.bio,
+                'role': author.role,
+                'article_count': author.articles.count()
+            })
+
+        return JsonResponse({'authors': data, 'count': len(data)}, status=200)
 
 
 class UsersAPIView(View):

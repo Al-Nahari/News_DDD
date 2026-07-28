@@ -27,7 +27,9 @@ urlpatterns = [
     # Metadata
     path('api/categories/', news_views.CategoriesAPIView.as_view(), name='api_categories'),
     path('api/tags/', news_views.TagsAPIView.as_view(), name='api_tags'),
+    path('api/authors/', news_views.AuthorsAPIView.as_view(), name='api_authors'),
     path('api/Users/', news_views.UsersAPIView.as_view(), name='api_Users'),
+    path('api/users/', news_views.UsersAPIView.as_view(), name='api_users_lower'),
     
     # Statistics
     path('api/stats/', news_views.StatsAPIView.as_view(), name='api_stats'),

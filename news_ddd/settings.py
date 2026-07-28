@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'graphene_django',
     'accounts',
     'news',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -52,6 +54,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS
+# The frontend (Next.js on Vercel, or localhost during development) calls this
+# API directly from the browser in client components, so CORS headers are
+# required or those requests fail silently with a network error.
+# Set CORS_ALLOWED_ORIGINS on Render to a comma-separated list of your actual
+# frontend origins, e.g. "https://new-fron.vercel.app,https://yourdomain.com".
+_cors_env = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',') if o.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
+# Always allow local dev origins.
+CORS_ALLOWED_ORIGINS += ['http://localhost:3000', 'http://127.0.0.1:3000']
 
 ROOT_URLCONF = 'news_ddd.urls'
 
