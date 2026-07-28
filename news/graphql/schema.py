@@ -4,6 +4,7 @@ from graphene_django import DjangoObjectType
 from graphene_file_upload.scalars import Upload
 from django.db.models import Q
 from datetime import datetime
+from django.utils import timezone
 
 from news.models import Article, Category, Tag, Event
 from accounts.models import User, Author
@@ -276,7 +277,7 @@ class CreateAuthor(graphene.Mutation):
                     'author_id': author.id,
                     'name': author.name,
                     'role': author.role,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -325,7 +326,7 @@ class CreateUser(graphene.Mutation):
                     'user_id': user.id,
                     'username': user.username,
                     'role': user.role,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -366,7 +367,7 @@ class CreateCategory(graphene.Mutation):
                     'category_id': category.id,
                     'name': category.name,
                     'slug': category.slug,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -405,7 +406,7 @@ class CreateTag(graphene.Mutation):
                     'tag_id': tag.id,
                     'name': tag.name,
                     'slug': tag.slug,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -466,7 +467,7 @@ class CreateArticle(graphene.Mutation):
                     'article_id': article.id,
                     'title': article.title,
                     'slug': article.slug,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -512,7 +513,7 @@ class PublishArticle(graphene.Mutation):
                     'article_id': article.id,
                     'title': article.title,
                     'published_at': article.published_at.isoformat(),
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -566,7 +567,7 @@ class UpdateArticle(graphene.Mutation):
                     'article_id': article.id,
                     'title': article.title,
                     'updated_fields': list(kwargs.keys()),
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -607,7 +608,7 @@ class DeleteArticle(graphene.Mutation):
                 data={
                     'article_id': article.id,
                     'title': article.title,
-                    'deleted_at': datetime.now().isoformat()
+                    'deleted_at': timezone.now().isoformat()
                 }
             )
             
@@ -854,7 +855,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 1250,
                     "comments": 340,
                     "reading_time": 4,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "ارتفاع كبير في أسعار النفط بعد قرارات أوبك الأخيرة",
@@ -871,7 +872,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 640,
                     "comments": 120,
                     "reading_time": 3,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "انطلاق فعاليات القمة العالمية للذكاء الاصطناعي في دبي",
@@ -888,7 +889,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 420,
                     "comments": 89,
                     "reading_time": 5,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "دراسة جديدة تكشف عن فوائد مذهلة للتمارين الرياضية",
@@ -905,7 +906,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 380,
                     "comments": 65,
                     "reading_time": 4,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "الكشف عن تطوير لقاح جديد لمرض خطير",
@@ -922,7 +923,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 890,
                     "comments": 210,
                     "reading_time": 3,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "انهيار في سوق الأسهم العالمية بسبب التوترات الاقتصادية",
@@ -939,7 +940,7 @@ class BulkInsertData(graphene.Mutation):
                     "likes": 1200,
                     "comments": 450,
                     "reading_time": 6,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 }
             ]
             
@@ -981,7 +982,7 @@ class BulkInsertData(graphene.Mutation):
                                 'article_id': article.id,
                                 'title': article.title,
                                 'slug': article.slug,
-                                'timestamp': datetime.now().isoformat()
+                                'timestamp': timezone.now().isoformat()
                             }
                         )
                         

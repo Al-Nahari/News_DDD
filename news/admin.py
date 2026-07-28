@@ -20,7 +20,7 @@ class TagAdmin(admin.ModelAdmin):
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'author', 'category', 'is_breaking', 'is_featured', 'views', 'likes', 'comments', 'published_at')
-    search_fields = ('title', 'content', 'excerpt', 'author__username', 'category__name')
+    search_fields = ('title', 'content', 'excerpt', 'author__name', 'category__name')
     list_filter = ('is_breaking', 'is_featured', 'category', 'author', 'published_at')
     filter_horizontal = ('tags',)
     prepopulated_fields = {'slug': ('title',)}

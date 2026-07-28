@@ -1,4 +1,4 @@
-# news_ddd/settings.py
+ # news_ddd/settings.py
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'graphene_django',
     'accounts',
     'news',
-    'media',
 ]
 
 MIDDLEWARE = [

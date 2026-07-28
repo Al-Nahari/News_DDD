@@ -9,12 +9,12 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('role', 'is_staff', 'is_superuser', 'is_editor', 'is_reporter')
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Custom Fields', {
-            'fields': ('role', 'phone', 'bio', 'profile_picture', 'is_editor', 'is_reporter')
+            'fields': ('role', 'phone', 'bio', 'avatar', 'is_editor', 'is_reporter')
         }),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
         ('Custom Fields', {
-            'fields': ('role', 'phone', 'bio', 'profile_picture', 'is_editor', 'is_reporter')
+            'fields': ('role', 'phone', 'bio', 'avatar', 'is_editor', 'is_reporter')
         }),
     )
     ordering = ('-id',)

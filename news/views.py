@@ -158,7 +158,7 @@ class ArticleDetailAPIView(View):
                 data={
                     'article_id': article.id,
                     'title': article.title,
-                    'updated_at': datetime.now().isoformat()
+                    'updated_at': timezone.now().isoformat()
                 }
             )
             
@@ -179,7 +179,7 @@ class ArticleDetailAPIView(View):
                 data={
                     'article_id': article.id,
                     'title': article.title,
-                    'deleted_at': datetime.now().isoformat()
+                    'deleted_at': timezone.now().isoformat()
                 }
             )
             
@@ -246,7 +246,7 @@ class CreateArticleAPIView(View):
                     'article_id': article.id,
                     'title': article.title,
                     'slug': article.slug,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': timezone.now().isoformat()
                 }
             )
             
@@ -353,13 +353,16 @@ class UsersAPIView(View):
         
         data = []
         for user in users:
+            article_count = sum(
+                author.articles.count() for author in user.author_profiles.all()
+            )
             data.append({
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'bio': user.bio,
                 'role': user.role,
-                'article_count': user.articles.count()
+                'article_count': article_count
             })
         
         return JsonResponse({'users': data, 'count': len(data)}, status=200)
@@ -575,7 +578,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 1250,
                     "comments": 340,
                     "reading_time": 4,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "ارتفاع كبير في أسعار النفط بعد قرارات أوبك الأخيرة",
@@ -592,7 +595,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 640,
                     "comments": 120,
                     "reading_time": 3,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "انطلاق فعاليات القمة العالمية للذكاء الاصطناعي في دبي",
@@ -609,7 +612,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 420,
                     "comments": 89,
                     "reading_time": 5,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "دراسة جديدة تكشف عن فوائد مذهلة للتمارين الرياضية",
@@ -626,7 +629,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 380,
                     "comments": 65,
                     "reading_time": 4,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "الكشف عن تطوير لقاح جديد لمرض خطير",
@@ -643,7 +646,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 890,
                     "comments": 210,
                     "reading_time": 3,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 },
                 {
                     "title": "انهيار في سوق الأسهم العالمية بسبب التوترات الاقتصادية",
@@ -660,7 +663,7 @@ class BulkInsertDataAPIView(View):
                     "likes": 1200,
                     "comments": 450,
                     "reading_time": 6,
-                    "published_at": datetime.now().isoformat()
+                    "published_at": timezone.now().isoformat()
                 }
             ]
             
@@ -713,7 +716,7 @@ class BulkInsertDataAPIView(View):
                                 'article_id': article.id,
                                 'title': article.title,
                                 'slug': article.slug,
-                                'timestamp': datetime.now().isoformat()
+                                'timestamp': timezone.now().isoformat()
                             }
                         )
                         
@@ -740,7 +743,7 @@ def health_check(request):
     """Health check endpoint - GET /api/health/"""
     return JsonResponse({
         'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': timezone.now().isoformat(),
         'service': 'news-api',
         'version': '1.0.0'
     }, status=200)
