@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Script لإدخال بيانات متنوعة وكثيرة إلى موقع الأخبار
-يتم تشغيله باستخدام: python populate_data.py
+تم تعديله لاستخدام Author model بدلاً من User
 """
 
 import os
@@ -14,24 +14,24 @@ import random
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'news_ddd.settings')
 django.setup()
 
-from news.models import Article, Category, Tag, Author, Event
-from accounts.models import User
+from news.models import Article, Category, Tag, Event
+from accounts.models import User, Author
 
 
 def clear_existing_data():
     """مسح البيانات الحالية"""
-    print("🗑️  مسح البيانات الحالية...")
+    print("=== مسح البيانات الحالية ===")
     Event.objects.all().delete()
     Article.objects.all().delete()
     Author.objects.all().delete()
     Category.objects.all().delete()
     Tag.objects.all().delete()
-    print("✅ تم مسح البيانات القديمة\n")
+    print("تم مسح البيانات القديمة\n")
 
 
 def create_users():
     """إنشاء مستخدمين"""
-    print("👤 إنشاء المستخدمين...")
+    print("=== إنشاء المستخدمين ===")
     
     users_data = [
         {'username': 'admin', 'email': 'admin@news.com', 'is_staff': True, 'is_superuser': True, 'role': 'admin'},
@@ -45,26 +45,32 @@ def create_users():
     
     users = []
     for data in users_data:
-        user = User.objects.create_user(
+        user, created = User.objects.get_or_create(
             username=data['username'],
-            email=data['email'],
-            password='password123',
-            is_staff=data.get('is_staff', False),
-            is_superuser=data.get('is_superuser', False),
-            is_editor=data.get('is_editor', False),
-            is_reporter=data.get('is_reporter', False),
-            role=data['role']
+            defaults={
+                'email': data['email'],
+                'is_staff': data.get('is_staff', False),
+                'is_superuser': data.get('is_superuser', False),
+                'is_editor': data.get('is_editor', False),
+                'is_reporter': data.get('is_reporter', False),
+                'role': data['role']
+            }
         )
+        if created:
+            user.set_password('password123')
+            user.save()
+            print(f"  OK - {user.username} ({user.role})")
+        else:
+            print(f"  EXIST - {user.username} ({user.role})")
         users.append(user)
-        print(f"  ✅ {user.username} ({user.role})")
     
-    print(f"✅ تم إنشاء {len(users)} مستخدمين\n")
+    print(f"تم إنشاء {len(users)} مستخدمين\n")
     return users
 
 
 def create_authors():
     """إنشاء مؤلفين"""
-    print("✍️  إنشاء المؤلفين...")
+    print("=== إنشاء المؤلفين ===")
     
     authors_data = [
         {
@@ -121,15 +127,15 @@ def create_authors():
     for data in authors_data:
         author = Author.objects.create(**data)
         authors.append(author)
-        print(f"  ✅ {author.name}")
+        print(f"  OK - {author.name}")
     
-    print(f"✅ تم إنشاء {len(authors)} مؤلفين\n")
+    print(f"تم إنشاء {len(authors)} مؤلفين\n")
     return authors
 
 
 def create_categories():
     """إنشاء تصنيفات"""
-    print("📁 إنشاء التصنيفات...")
+    print("=== إنشاء التصنيفات ===")
     
     categories_data = [
         {"name": "السياسة", "slug": "politics", "color": "#3B82F6", "icon": "landmark"},
@@ -148,21 +154,21 @@ def create_categories():
     for data in categories_data:
         category = Category.objects.create(**data)
         categories.append(category)
-        print(f"  ✅ {category.name}")
+        print(f"  OK - {category.name}")
     
-    print(f"✅ تم إنشاء {len(categories)} تصنيفات\n")
+    print(f"تم إنشاء {len(categories)} تصنيفات\n")
     return categories
 
 
 def create_tags():
     """إنشاء وسوم"""
-    print("🏷️  إنشاء الوسوم...")
+    print("=== إنشاء الوسوم ===")
     
     tags_data = [
         # سياسة
         {"name": "القمة", "slug": "summit"},
         {"name": "السلام", "slug": "peace"},
-        {"name": "ال 대통ولة", "slug": "diplomacy"},
+        {"name": "الدبلوماسية", "slug": "diplomacy"},
         {"name": "الانتخابات", "slug": "elections"},
         {"name": "البرلمان", "slug": "parliament"},
         
@@ -226,17 +232,23 @@ def create_tags():
     
     tags = []
     for data in tags_data:
-        tag = Tag.objects.create(**data)
+        tag, created = Tag.objects.get_or_create(
+            slug=data['slug'],
+            defaults={'name': data['name']}
+        )
         tags.append(tag)
-        print(f"  ✅ {tag.name}")
+        if created:
+            print(f"  OK - {tag.name}")
+        else:
+            print(f"  EXIST - {tag.name}")
     
-    print(f"✅ تم إنشاء {len(tags)} وسوم\n")
+    print(f"تم إنشاء {len(tags)} وسوم\n")
     return tags
 
 
 def create_articles(authors, categories, tags):
     """إنشاء مقالات متنوعة وكثيرة"""
-    print("📰 إنشاء المقالات...")
+    print("=== إنشاء المقالات ===")
     
     # قوائم عناوين متنوعة
     titles_politics = [
@@ -246,7 +258,7 @@ def create_articles(authors, categories, tags):
         "القمة العالمية للسلام تبدأ أعمالها في الرياض",
         "بيان ختامي لقمة القادة يؤكد أهمية التعاون الإقليمي",
         "القمة العربية تبحث سبل تحقيق التنمية المستدامة",
-        "قمة الطاقة العربية تناقش مستقبل الطاقة المتجددة",
+        "القمة الطاقة العربية تDiscuss مستقبل الطاقة المتجددة",
         "القمة الاقتصادية توقع اتفاقيات بقيمة 50 مليار دولار",
     ]
     
@@ -486,69 +498,76 @@ def create_articles(authors, categories, tags):
         
         # طباعة كل 10 مقالات
         if articles_created % 10 == 0:
-            print(f"  ✅ تم إنشاء {articles_created} مقال")
+            print(f"  OK - تم إنشاء {articles_created} مقال")
     
-    print(f"✅ تم إنشاء {articles_created} مقال بنجاح!\n")
+    print(f"تم إنشاء {articles_created} مقال بنجاح!\n")
     return articles_created
 
 
 def create_sample_users(users):
     """إنشاء عينات من المستخدمين للربط مع المقالات"""
-    print("👥 إنشاء عينات المستخدمين...")
+    print("=== إنشاء عينات المستخدمين ===")
     
     # إنشاء بعض المستخدمين الإضافيين
     sample_users = []
     for i in range(1, 6):
-        user = User.objects.create_user(
+        user, created = User.objects.get_or_create(
             username=f'user{i}',
-            email=f'user{i}@example.com',
-            password='password123',
-            role='reader'
+            defaults={
+                'email': f'user{i}@example.com',
+                'role': 'reader'
+            }
         )
+        if created:
+            user.set_password('password123')
+            user.save()
+            print(f"  OK - {user.username}")
+        else:
+            print(f"  EXIST - {user.username}")
         sample_users.append(user)
-        print(f"  ✅ {user.username}")
     
-    print(f"✅ تم إنشاء {len(sample_users)} مستخدم إضافي\n")
+    print(f"تم إنشاء {len([u for u in sample_users if u.username.startswith('user')])} مستخدم إضافي\n")
     return users + sample_users
 
 
 def print_statistics():
     """طباعة إحصائيات بعد الإدخال"""
     print("\n" + "="*60)
-    print("📊 إحصائيات النظام")
+    print("=== إحصائيات النظام ===")
     print("="*60)
     
-    print(f"👤 المستخدمين: {User.objects.count()}")
-    print(f"✍️  المؤلفين: {Author.objects.count()}")
-    print(f"📁 التصنيفات: {Category.objects.count()}")
-    print(f"🏷️  الوسوم: {Tag.objects.count()}")
-    print(f"📰 المقالات: {Article.objects.count()}")
-    print(f"📋 الأحداث: {Event.objects.count()}")
+    print(f"المستخدمين: {User.objects.count()}")
+    print(f"المؤلفين: {Author.objects.count()}")
+    print(f"التصنيفات: {Category.objects.count()}")
+    print(f"الوسوم: {Tag.objects.count()}")
+    print(f"المقالات: {Article.objects.count()}")
+    print(f"الأحداث: {Event.objects.count()}")
     
-    print("\n📊 توزيع المقالات حسب التصنيف:")
+    print("\nتوزيع المقالات حسب التصنيف:")
     for category in Category.objects.all():
         count = category.articles.count()
         print(f"  {category.name}: {count} مقال")
     
-    print("\n📊 المقالات المميزة:")
+    print("\nالمقالات المميزة:")
     print(f"  عاجلة: {Article.objects.filter(is_breaking=True).count()}")
     print(f"  مميزة: {Article.objects.filter(is_featured=True).count()}")
     
-    print("\n📊 إحصائيات إضافية:")
-    total_views = Article.objects.aggregate(sum='views')['sum'] or 0
-    total_likes = Article.objects.aggregate(sum='likes')['sum'] or 0
+    print("\nإحصائيات إضافية:")
+    from django.db.models import Sum
+    total_views = Article.objects.aggregate(total_views=Sum('views'))['total_views'] or 0
+    total_likes = Article.objects.aggregate(total_likes=Sum('likes'))['total_likes'] or 0
     print(f"  إجمالي المشاهدات: {total_views:,}")
     print(f"  إجمالي الإعجابات: {total_likes:,}")
     
     print("\n" + "="*60)
-    print("✅ تم إدخال جميع البيانات بنجاح!")
+    print("تم إدخال جميع البيانات بنجاح!")
     print("="*60)
 
 
 def main():
     """الدالة الرئيسية"""
     print("\n" + "="*60)
-    print("🚀 بدء إدخال البيانات إلى الموقع")
+    print("=== بدء إدخال البيانات إلى الموقع ===")
     print("="*60 + "\n")
     
     try:
@@ -576,8 +595,8 @@ def main():
         # 8. طباعة الإحصائيات
         print_statistics()
         
-        print("\n🎉 تهانينا! تم إدخال جميع البيانات بنجاح!")
-        print("\n💡 نصائح:")
+        print("\nتهانينا! تم إدخال جميع البيانات بنجاح!")
+        print("\nنصائح:")
         print("  • اذهب إلى http://localhost:8000/graphql/ لتجربة GraphQL")
         print("  • اذهب إلى http://localhost:8000/api/news/ لتجربة REST API")
         print("  • اذهب إلى http://localhost:8000/admin/ لعرض البيانات")
@@ -585,7 +604,7 @@ def main():
         print("  • كلمة المرور: password123")
         
     except Exception as e:
-        print(f"\n❌ حدث خطأ: {e}")
+        print(f"\nحدث خطأ: {e}")
         import traceback
         traceback.print_exc()
 

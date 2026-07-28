@@ -119,7 +119,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # GraphQL settings
 GRAPHENE = {
-    'SCHEMA': 'news.graphql.schema.schema',
+    'SCHEMA': 'news_ddd.schema.schema',
     'MIDDLEWARE': [],
 }
 

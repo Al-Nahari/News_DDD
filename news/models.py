@@ -1,6 +1,5 @@
 # news/models.py
 from django.db import models
-from accounts.models import User
 
 
 class Category(models.Model):
@@ -33,31 +32,15 @@ class Tag(models.Model):
         return self.name
 
 
-class Author(models.Model):
-    """Author Model - مؤلف المقالات"""
-    name = models.CharField(max_length=200, verbose_name="الاسم")
-    avatar = models.URLField(max_length=500, verbose_name="الصورة")
-    bio = models.TextField(verbose_name="السيرة الذاتية")
-    role = models.CharField(max_length=50, default='reporter', verbose_name="الدور")
-    
-    class Meta:
-        db_table = 'news_author'
-        verbose_name = "مؤلف"
-        verbose_name_plural = "مؤلفين"
-
-    def __str__(self):
-        return self.name
-
-
 class Article(models.Model):
     """Article Model - المقالات والأخبار"""
     title = models.CharField(max_length=500, verbose_name="العنوان")
     slug = models.SlugField(unique=True, verbose_name="الرابط")
     excerpt = models.TextField(verbose_name="الملخص")
     content = models.TextField(verbose_name="المحتوى")
-    featured_image = models.URLField(max_length=1000, null=True, blank=True, verbose_name="الصورة المميزة")
+    featured_image = models.URLField(max_length=1000, blank=True, null=True, verbose_name="صورة مميزة")
     
-    author = models.ForeignKey(Author, on_delete=models.SET_NULL, null=True, related_name='articles', verbose_name="المؤلف")
+    author = models.ForeignKey('accounts.Author', on_delete=models.SET_NULL, null=True, related_name='articles', verbose_name="المؤلف")
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='articles', verbose_name="التصنيف")
     tags = models.ManyToManyField(Tag, related_name='articles', blank=True, verbose_name="الوسوم")
     

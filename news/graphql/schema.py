@@ -5,16 +5,24 @@ from graphene_file_upload.scalars import Upload
 from django.db.models import Q
 from datetime import datetime
 
-from news.models import Article, Category, Tag, Author, Event
+from news.models import Article, Category, Tag, Event
+from accounts.models import User, Author
 
 
 # ======== TYPES ========
+
+class UserType(DjangoObjectType):
+    """User Type - GraphQL type for User model"""
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "first_name", "last_name", "role", "bio", "avatar", "phone", "is_editor", "is_reporter")
+
 
 class AuthorType(DjangoObjectType):
     """Author Type - GraphQL type for Author model"""
     class Meta:
         model = Author
-        fields = ("id", "name", "avatar", "bio", "role")
+        fields = ("id", "name", "avatar", "bio", "role", "user", "created_at", "updated_at")
 
 
 class CategoryType(DjangoObjectType):
@@ -62,9 +70,10 @@ class MutationResultType(graphene.ObjectType):
 class AuthorInput(graphene.InputObjectType):
     """Input type for creating/updating author"""
     name = graphene.String(required=True)
-    avatar = graphene.String(required=True)
-    bio = graphene.String(required=True)
-    role = graphene.String(required=True)
+    avatar = graphene.String(required=False)
+    bio = graphene.String(required=False)
+    role = graphene.String(required=False)
+    user_id = graphene.Int(required=False)
 
 
 class CategoryInput(graphene.InputObjectType):
@@ -145,6 +154,9 @@ class Query(graphene.ObjectType):
     # جميع الأحداث المنشورة
     published_events = graphene.List(EventType)
     
+    # جميع المستخدمين
+    all_users = graphene.List(UserType)
+    
     # جميع المؤلفين
     all_authors = graphene.List(AuthorType)
     
@@ -215,6 +227,10 @@ class Query(graphene.ObjectType):
         """حل استعلام جميع الأحداث المنشورة"""
         return Event.objects.filter(event_type='article_published').order_by('-timestamp')
     
+    def resolve_all_users(self, info):
+        """حل استعلام جميع المستخدمين"""
+        return User.objects.all()
+    
     def resolve_all_authors(self, info):
         """حل استعلام جميع المؤلفين"""
         return Author.objects.all()
@@ -240,11 +256,17 @@ class CreateAuthor(graphene.Mutation):
     
     def mutate(self, info, author_data):
         try:
+            # Get user if provided
+            user = None
+            if author_data.user_id:
+                user = User.objects.get(id=author_data.user_id)
+            
             author = Author.objects.create(
                 name=author_data.name,
-                avatar=author_data.avatar,
-                bio=author_data.bio,
-                role=author_data.role
+                avatar=author_data.avatar or '',
+                bio=author_data.bio or '',
+                role=author_data.role or 'reporter',
+                user=user
             )
             
             # Create event
@@ -253,6 +275,7 @@ class CreateAuthor(graphene.Mutation):
                 data={
                     'author_id': author.id,
                     'name': author.name,
+                    'role': author.role,
                     'timestamp': datetime.now().isoformat()
                 }
             )
@@ -267,6 +290,55 @@ class CreateAuthor(graphene.Mutation):
                 success=False,
                 data=None,
                 message=f"Failed to create author: {str(e)}"
+            )
+
+
+class CreateUser(graphene.Mutation):
+    """Mutation to create a new user"""
+    
+    class Arguments:
+        username = graphene.String(required=True)
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+        role = graphene.String(required=False, default_value='reader')
+        bio = graphene.String(required=False)
+        phone = graphene.String(required=False)
+    
+    Output = MutationResultType
+    
+    def mutate(self, info, username, email, password, role='reader', bio='', phone=''):
+        try:
+            from accounts.models import User
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                role=role,
+                bio=bio,
+                phone=phone
+            )
+            
+            # Create event
+            Event.objects.create(
+                event_type='user_created',
+                data={
+                    'user_id': user.id,
+                    'username': user.username,
+                    'role': user.role,
+                    'timestamp': datetime.now().isoformat()
+                }
+            )
+            
+            return MutationResultType(
+                success=True,
+                data={'user_id': user.id, 'username': user.username},
+                message="User created successfully"
+            )
+        except Exception as e:
+            return MutationResultType(
+                success=False,
+                data=None,
+                message=f"Failed to create user: {str(e)}"
             )
 
 
@@ -636,44 +708,87 @@ class BulkInsertData(graphene.Mutation):
     
     def mutate(self, info):
         try:
+            # Insert Users
+            users_data = [
+                {
+                    "username": "ahmed_mohammed",
+                    "email": "ahmed@news.com",
+                    "password": "password123",
+                    "role": "reporter",
+                    "bio": "مراسل سياسي متخصص في الشؤون الدولية",
+                    "phone": "+966500000001"
+                },
+                {
+                    "username": "fatima_alatebi",
+                    "email": "fatima@news.com",
+                    "password": "password123",
+                    "role": "editor",
+                    "bio": "خبيرة اقتصادية وتحليلية",
+                    "phone": "+966500000002"
+                },
+                {
+                    "username": "khaled_alsalem",
+                    "email": "khaled@news.com",
+                    "password": "password123",
+                    "role": "reporter",
+                    "bio": "مراسل رياضي",
+                    "phone": "+966500000003"
+                },
+                {
+                    "username": "nora_alharbi",
+                    "email": "nora@news.com",
+                    "password": "password123",
+                    "role": "editor",
+                    "bio": "كاتبة ومحررة",
+                    "phone": "+966500000004"
+                }
+            ]
+            
+            from accounts.models import User
+            users = []
+            for data in users_data:
+                try:
+                    user = User.objects.get(username=data['username'])
+                    user.email = data['email']
+                    user.role = data['role']
+                    user.bio = data['bio']
+                    user.phone = data['phone']
+                    user.save()
+                except User.DoesNotExist:
+                    user = User.objects.create_user(**data)
+                users.append(user)
+            
             # Insert Authors
             authors_data = [
                 {
-                    "name": "أحمد محمد",
+                    "name": "أحمد محمد العتيبي",
                     "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
-                    "bio": "مراسل سياسي متخصص في الشؤون الدولية",
+                    "bio": "مراسل سياسي متخصص في الشؤون الدولية والقمم العالمية",
                     "role": "reporter"
                 },
                 {
-                    "name": "فاطمة العتيبي",
+                    "name": "فاطمة عبدالله الحربي",
                     "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
-                    "bio": "خبيرة اقتصادية وتحليلية",
+                    "bio": "خبيرة اقتصادية وتحليلية markets و stocks",
                     "role": "editor"
                 },
                 {
-                    "name": "خالد السالم",
+                    "name": "خالد سالم السالم",
                     "avatar": "https://randomuser.me/api/portraits/men/28.jpg",
-                    "bio": "مراسل رياضي",
+                    "bio": "مراسل رياضي متخصص في كرة القدم والدوري السعودي",
                     "role": "reporter"
                 },
                 {
-                    "name": "نورا الحربي",
+                    "name": "نورا أحمد الشمري",
                     "avatar": "https://randomuser.me/api/portraits/women/68.jpg",
-                    "bio": "كاتبة ومحررة",
+                    "bio": "كاتبة ومحررة متخصصة في الصحة والطب",
                     "role": "editor"
                 }
             ]
             
             authors = []
             for data in authors_data:
-                try:
-                    author = Author.objects.get(name=data['name'])
-                    author.avatar = data['avatar']
-                    author.bio = data['bio']
-                    author.role = data['role']
-                    author.save()
-                except Author.DoesNotExist:
-                    author = Author.objects.create(**data)
+                author = Author.objects.create(**data)
                 authors.append(author)
             
             # Insert Categories
@@ -877,12 +992,13 @@ class BulkInsertData(graphene.Mutation):
             return MutationResultType(
                 success=True,
                 data={
+                    'users': len(users),
                     'authors': len(authors),
                     'categories': len(categories),
                     'tags': len(tags),
                     'articles': articles_created
                 },
-                message=f"Data inserted successfully! Created: {len(authors)} authors, {len(categories)} categories, {len(tags)} tags, {articles_created} articles"
+                message=f"Data inserted successfully! Created: {len(users)} users, {len(authors)} authors, {len(categories)} categories, {len(tags)} tags, {articles_created} articles"
             )
             
         except Exception as e:
@@ -895,7 +1011,7 @@ class BulkInsertData(graphene.Mutation):
 
 class Mutation(graphene.ObjectType):
     """
-    GraphQL Mutations - جميع التعديلات للأخبار
+    GraphQL Mutations - جميع التعديلات للニュース
     
     المميزات:
     - كل mutation له handler خاص
@@ -903,6 +1019,7 @@ class Mutation(graphene.ObjectType):
     - DDD: كل mutation تمثل عملية تجارية
     """
     create_author = CreateAuthor.Field()
+    create_user = CreateUser.Field()
     create_category = CreateCategory.Field()
     create_tag = CreateTag.Field()
     create_article = CreateArticle.Field()

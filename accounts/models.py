@@ -1,33 +1,66 @@
-# accounts/models.py
-from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
-    """User Model - مستخدمي النظام مع الصلاحيات"""
+    """User Model - المستخدمون مع الأدوار والصلاحيات"""
+    
+    ROLE_CHOICES = [
+        ('admin', 'مدير'),
+        ('editor', 'محرر'),
+        ('reporter', 'مراسل'),
+        ('reader', 'قارئ'),
+    ]
+    
+    role = models.CharField(
+        max_length=20, 
+        choices=ROLE_CHOICES, 
+        default='reader',
+        verbose_name="الدور"
+    )
+    
+    bio = models.TextField(blank=True, null=True, verbose_name="السيرة الذاتية")
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="رقم الهاتف")
+    avatar = models.URLField(blank=True, null=True, verbose_name="صورة الملف الشخصي")
+    
+    # Permissions
     is_editor = models.BooleanField(default=False, verbose_name="محرر")
     is_reporter = models.BooleanField(default=False, verbose_name="مراسل")
-    role = models.CharField(max_length=50, default='reader', verbose_name="الدور")
-    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True, verbose_name="صورة الملف الشخصي")
-    phone = models.CharField(max_length=20, blank=True, verbose_name="الهاتف")
-    bio = models.TextField(blank=True, verbose_name="السيرة الذاتية")
     
     class Meta:
         db_table = 'accounts_user'
         verbose_name = "مستخدم"
-        verbose_name_plural = "مستخدمين"
+        verbose_name_plural = "مستخدمون"
     
     def __str__(self):
-        return self.username or self.email or "User"
+        return f"{self.username} ({self.get_role_display()})"
+
+
+class Author(models.Model):
+    """Author Model - المؤلفون والكتاب"""
     
-    @property
-    def is_admin(self):
-        return self.is_superuser or self.is_staff
+    name = models.CharField(max_length=200, verbose_name="الاسم")
+    avatar = models.URLField(blank=True, null=True, verbose_name="صورة المؤلف")
+    bio = models.TextField(blank=True, null=True, verbose_name="السيرة الذاتية")
+    role = models.CharField(max_length=20, default='reporter', verbose_name="الدور")
     
-    @property
-    def can_edit(self):
-        return self.is_editor or self.is_admin
+    # Relation to User (optional - for authenticated users)
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='author_profiles',
+        verbose_name="المستخدم المرتبط"
+    )
     
-    @property
-    def can_report(self):
-        return self.is_reporter or self.is_editor or self.is_admin
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الإنشاء")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاريخ التحديث")
+    
+    class Meta:
+        db_table = 'accounts_author'
+        verbose_name = "مؤلف"
+        verbose_name_plural = "مؤلفون"
+    
+    def __str__(self):
+        return self.name

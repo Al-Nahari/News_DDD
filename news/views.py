@@ -5,7 +5,9 @@ from django.utils import timezone
 from datetime import datetime
 from django.db.models import Q, Count, Sum
 
-from .models import Article, Category, Tag, Author, Event
+from accounts.models import User, Author
+
+from .models import Article, Category, Tag, Event
 
 
 # ======== REST API VIEWS ========
@@ -55,7 +57,8 @@ class ArticleListAPIView(View):
                 'author': {
                     'id': article.author.id,
                     'name': article.author.name,
-                    'avatar': article.author.avatar
+                    'avatar': article.author.avatar,
+                    'role': article.author.role
                 } if article.author else None,
                 'category': {
                     'id': article.category.id,
@@ -342,24 +345,24 @@ class TagsAPIView(View):
         return JsonResponse({'tags': data, 'count': len(data)}, status=200)
 
 
-class AuthorsAPIView(View):
-    """API View for authors - GET /api/authors/"""
+class UsersAPIView(View):
+    """API View for Users - GET /api/users/"""
     
     def get(self, request):
-        authors = Author.objects.all()
+        users = User.objects.all()
         
         data = []
-        for author in authors:
+        for user in users:
             data.append({
-                'id': author.id,
-                'name': author.name,
-                'avatar': author.avatar,
-                'bio': author.bio,
-                'role': author.role,
-                'article_count': author.articles.count()
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'bio': user.bio,
+                'role': user.role,
+                'article_count': user.articles.count()
             })
         
-        return JsonResponse({'authors': data, 'count': len(data)}, status=200)
+        return JsonResponse({'users': data, 'count': len(data)}, status=200)
 
 
 class StatsAPIView(View):
@@ -367,7 +370,7 @@ class StatsAPIView(View):
     
     def get(self, request):
         total_articles = Article.objects.count()
-        total_authors = Author.objects.count()
+        total_users = User.objects.count()
         total_categories = Category.objects.count()
         total_tags = Tag.objects.count()
         
@@ -390,7 +393,7 @@ class StatsAPIView(View):
         
         data = {
             'total_articles': total_articles,
-            'total_authors': total_authors,
+            'total_users': total_users,
             'total_categories': total_categories,
             'total_tags': total_tags,
             'breaking_news': breaking_news,
@@ -460,45 +463,54 @@ class BulkInsertDataAPIView(View):
     
     def post(self, request):
         try:
-            # Insert Authors
-            authors_data = [
+            # Insert Users
+            users_data = [
                 {
-                    "name": "أحمد محمد",
-                    "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
+                    "username": "ahmed_mohammed",
+                    "email": "ahmed@news.com",
+                    "password": "password123",
+                    "role": "reporter",
                     "bio": "مراسل سياسي متخصص في الشؤون الدولية",
-                    "role": "reporter"
+                    "phone": "+966500000001"
                 },
                 {
-                    "name": "فاطمة العتيبي",
-                    "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
+                    "username": "fatima_alatebi",
+                    "email": "fatima@news.com",
+                    "password": "password123",
+                    "role": "editor",
                     "bio": "خبيرة اقتصادية وتحليلية",
-                    "role": "editor"
+                    "phone": "+966500000002"
                 },
                 {
-                    "name": "خالد السالم",
-                    "avatar": "https://randomuser.me/api/portraits/men/28.jpg",
+                    "username": "khaled_alsalem",
+                    "email": "khaled@news.com",
+                    "password": "password123",
+                    "role": "reporter",
                     "bio": "مراسل رياضي",
-                    "role": "reporter"
+                    "phone": "+966500000003"
                 },
                 {
-                    "name": "نورا الحربي",
-                    "avatar": "https://randomuser.me/api/portraits/women/68.jpg",
+                    "username": "nora_alharbi",
+                    "email": "nora@news.com",
+                    "password": "password123",
+                    "role": "editor",
                     "bio": "كاتبة ومحررة",
-                    "role": "editor"
+                    "phone": "+966500000004"
                 }
             ]
             
-            authors = []
-            for data in authors_data:
+            users = []
+            for data in users_data:
                 try:
-                    author = Author.objects.get(name=data['name'])
-                    author.avatar = data['avatar']
-                    author.bio = data['bio']
-                    author.role = data['role']
-                    author.save()
-                except Author.DoesNotExist:
-                    author = Author.objects.create(**data)
-                authors.append(author)
+                    user = User.objects.get(username=data['username'])
+                    user.email = data['email']
+                    user.role = data['role']
+                    user.bio = data['bio']
+                    user.phone = data['phone']
+                    user.save()
+                except User.DoesNotExist:
+                    user = User.objects.create_user(**data)
+                users.append(user)
             
             # Insert Categories
             categories_data = [
@@ -554,7 +566,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "انطلقت اليوم القمة الدولية للسلام في العاصمة السعودية الرياض بحضور قادة دول وممثلي منظمات دولية لبحث سبل إنهاء الصراعات في المنطقة.",
                     "content": "انطلقت اليوم القمة الدولية للسلام في العاصمة السعودية الرياض بحضور قادة دول وممثلي منظمات دولية لبحث سبل إنهاء الصراعات في المنطقة. وتركز القمة على تعزيز التعاون الاقتصادي والأمني بين الدول المشاركة.",
                     "featured_image": "https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=800&h=500&fit=crop",
-                    "author_id": 1,
+                    "user_id": 1,
                     "category_id": 1,
                     "tag_ids": [1, 2],
                     "is_breaking": True,
@@ -571,7 +583,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "شهدت أسعار النفط ارتفاعاً ملحوظاً بعد أن أعلنت منظمة البلدان المصدرة للبترول عن خفض الإنتاج.",
                     "content": "شهدت أسعار النفط العالمية ارتفاعاً ملحوظاً بعد أن أعلنت منظمة البلدان المصدرة للبترول وحلفائها عن خفض الإنتاج بنسبة 5%. ويعزى هذا الارتفاع إلى زيادة الطلب العالمي.",
                     "featured_image": "https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?w=800&h=500&fit=crop",
-                    "author_id": 2,
+                    "user_id": 2,
                     "category_id": 2,
                     "tag_ids": [3, 4],
                     "is_breaking": False,
@@ -588,7 +600,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "انطلقت فعاليات القمة العالمية للذكاء الاصطناعي في دبي بمشاركة خبراء وشركات تقنية عالمية.",
                     "content": "انطلقت اليوم فعاليات القمة العالمية للذكاء الاصطناعي في دبي بمشاركة أكثر من 500 خبير وشركة تقنية عالمية. وتركز القمة على مستقبل الذكاء الاصطناعي وتطبيقاته.",
                     "featured_image": "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?w=800&h=500&fit=crop",
-                    "author_id": 3,
+                    "user_id": 3,
                     "category_id": 4,
                     "tag_ids": [5, 6],
                     "is_breaking": False,
@@ -605,7 +617,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "أظهرت دراسة جديدة أن ممارسة الرياضة بانتظام يمكن أن تزيد من العمر المتوقع.",
                     "content": "أظهرت دراسة جديدة أجريت على آلاف المشاركين أن ممارسة الرياضة بانتظام يمكن أن تزيد من العمر المتوقع بنسبة 20%. وتوصل الباحثون إلى هذه النتائج بعد متابعة المشاركين.",
                     "featured_image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=500&fit=crop",
-                    "author_id": 4,
+                    "user_id": 4,
                     "category_id": 3,
                     "tag_ids": [7, 8],
                     "is_breaking": False,
@@ -622,7 +634,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "أعلنت شرطة دوائية رائدة عن تطوير لقاح جديد لمرض خطير يهدد ملايين الأشخاص.",
                     "content": "أعلنت شركة دوائية رائدة عن تطوير لقاح جديد لمرض خطير يهدد ملايين الأشخاص حول العالم. وأظهرت التجارب الأولية نجاحاً كبيراً.",
                     "featured_image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&h=500&fit=crop",
-                    "author_id": 2,
+                    "user_id": 2,
                     "category_id": 5,
                     "tag_ids": [9, 7],
                     "is_breaking": True,
@@ -639,7 +651,7 @@ class BulkInsertDataAPIView(View):
                     "excerpt": "شهدت الأسواق المالية العالمية انهياراً كبيراً بسبب التوترات الاقتصادية الجيوسياسية.",
                     "content": "شهدت الأسواق المالية العالمية انهياراً كبيراً بسبب التوترات الاقتصادية الجيوسياسية. وانخفض مؤشرات الأسهم الرئيسية.",
                     "featured_image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=500&fit=crop",
-                    "author_id": 2,
+                    "user_id": 2,
                     "category_id": 2,
                     "tag_ids": [10, 11],
                     "is_breaking": True,
@@ -655,7 +667,18 @@ class BulkInsertDataAPIView(View):
             articles_created = 0
             for article_data in articles_data:
                 try:
-                    author = Author.objects.get(id=article_data['author_id'])
+                    # Get or create Author from User
+                    user = User.objects.get(id=article_data['user_id'])
+                    author, created = Author.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            'name': user.username,
+                            'avatar': user.avatar or '',
+                            'bio': user.bio or '',
+                            'role': user.role
+                        }
+                    )
+                    
                     category = Category.objects.get(id=article_data['category_id'])
                     
                     article, created = Article.objects.get_or_create(
@@ -700,9 +723,9 @@ class BulkInsertDataAPIView(View):
             
             return JsonResponse({
                 'success': True,
-                'message': f"Data inserted successfully! Created: {len(authors)} authors, {len(categories)} categories, {len(tags)} tags, {articles_created} articles",
+                'message': f"Data inserted successfully! Created: {len(users)} users, {len(categories)} categories, {len(tags)} tags, {articles_created} articles",
                 'data': {
-                    'authors': len(authors),
+                    'users': len(users),
                     'categories': len(categories),
                     'tags': len(tags),
                     'articles': articles_created

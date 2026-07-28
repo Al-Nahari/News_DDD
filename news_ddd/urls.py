@@ -12,7 +12,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # GraphQL API
-    path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema='news.graphql.schema.schema'))),
+    path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema='news_ddd.schema.schema'))),
     
     # REST API Endpoints
     # Articles
@@ -27,7 +27,7 @@ urlpatterns = [
     # Metadata
     path('api/categories/', news_views.CategoriesAPIView.as_view(), name='api_categories'),
     path('api/tags/', news_views.TagsAPIView.as_view(), name='api_tags'),
-    path('api/authors/', news_views.AuthorsAPIView.as_view(), name='api_authors'),
+    path('api/Users/', news_views.UsersAPIView.as_view(), name='api_Users'),
     
     # Statistics
     path('api/stats/', news_views.StatsAPIView.as_view(), name='api_stats'),
