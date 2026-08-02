@@ -1,7 +1,11 @@
 Django==4.2.30
 gunicorn==21.2.0
+djangorestframework>=3.14,<3.16
+djangorestframework-simplejwt>=5.3,<6.0
+django-filter>=23.5,<25.0
 graphene-django>=3.0,<4.0
 graphene-file-upload>=1.0,<2.0
 django-cors-headers>=3.0,<4.0
 whitenoise>=6.6,<7.0
 dj-database-url>=2.1,<3.0
+psycopg2-binary>=2.9,<3.0

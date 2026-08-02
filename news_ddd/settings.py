@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,16 +13,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # On Render, set SECRET_KEY as an environment variable (dashboard -> Environment).
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-vf9acqu1(8irwouxnp(c^en+2!shxe4&e^6it7a%ci^8673-fs'
-)
-
-# SECURITY WARNING: don't run with debug turned on in production!
-# Defaults to False; set DEBUG=True in your local .env / shell for development.
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+_insecure_dev_key = 'django-insecure-vf9acqu1(8irwouxnp(c^en+2!shxe4&e^6it7a%ci^8673-fs'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        # Only ever fall back to a throwaway key in local development.
+        SECRET_KEY = _insecure_dev_key
+    else:
+        raise ImproperlyConfigured(
+            'SECRET_KEY environment variable is not set. Refusing to start '
+            'in production with an insecure default key.'
+        )
+
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Render sets this automatically for every web service; trust it if present.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -38,6 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'rest_framework',
+    'django_filters',
     'graphene_django',
     'accounts',
     'news',
@@ -167,3 +178,75 @@ GRAPHENE = {
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Django REST Framework
+# Public GET endpoints are open; every write requires authentication, and
+# role-based permission classes (see news/api/permissions.py) restrict which
+# authenticated users may perform which actions.
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'EXCEPTION_HANDLER': 'news.api.exceptions.api_exception_handler',
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': __import__('datetime').timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': __import__('datetime').timedelta(days=7),
+}
+
+# Security headers. Render terminates TLS in front of the app and forwards
+# this header, so trust it to know the original request was HTTPS.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7  # 1 week; raise once confirmed safe
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+_csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(',') if o.strip()]
+
+# Logging: readable console logs in development, structured/quiet in
+# production. Application code should use `logging.getLogger(__name__)`
+# instead of print() for anything worth keeping.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO' if not DEBUG else 'DEBUG',
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}

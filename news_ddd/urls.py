@@ -1,46 +1,29 @@
 # news_ddd/urls.py
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
 
-# Import API views
-from news import views as news_views
+# Legacy, read-only, unversioned endpoints kept for backward compatibility.
+from news import views as legacy_views
 
 urlpatterns = [
-    # Admin
     path('admin/', admin.site.urls),
-    
-    # GraphQL API
+
+    # Versioned REST API — the primary API going forward.
+    path('api/v1/', include('news.api.urls')),
+
+    # GraphQL kept pending confirmation of frontend usage (see README /
+    # refactor report); mutations are now permission-checked.
     path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema='news_ddd.schema.schema'))),
-    
-    # REST API Endpoints
-    # Articles
-    path('api/news/', news_views.ArticleListAPIView.as_view(), name='api_news_list'),
-    path('api/news/create/', news_views.CreateArticleAPIView.as_view(), name='api_news_create'),
-    path('api/news/<int:article_id>/', news_views.ArticleDetailAPIView.as_view(), name='api_news_detail'),
-    
-    # Special lists
-    path('api/breaking/', news_views.BreakingNewsAPIView.as_view(), name='api_breaking'),
-    path('api/featured/', news_views.FeaturedArticlesAPIView.as_view(), name='api_featured'),
-    
-    # Metadata
-    path('api/categories/', news_views.CategoriesAPIView.as_view(), name='api_categories'),
-    path('api/tags/', news_views.TagsAPIView.as_view(), name='api_tags'),
-    path('api/authors/', news_views.AuthorsAPIView.as_view(), name='api_authors'),
-    path('api/Users/', news_views.UsersAPIView.as_view(), name='api_Users'),
-    path('api/users/', news_views.UsersAPIView.as_view(), name='api_users_lower'),
-    
-    # Statistics
-    path('api/stats/', news_views.StatsAPIView.as_view(), name='api_stats'),
-    
-    # Actions
-    path('api/views/increment/', news_views.IncrementViewsAPIView.as_view(), name='api_increment_views'),
-    path('api/likes/increment/', news_views.IncrementLikesAPIView.as_view(), name='api_increment_likes'),
-    
-    # Bulk operations
-    path('api/bulk-insert/', news_views.BulkInsertDataAPIView.as_view(), name='api_bulk_insert'),
-    
-    # Health check
-    path('api/health/', news_views.health_check, name='api_health'),
+
+    # --- Legacy, read-only, unversioned endpoints (kept for compatibility) ---
+    path('api/news/', legacy_views.ArticleListAPIView.as_view(), name='api_news_list'),
+    path('api/news/<int:article_id>/', legacy_views.ArticleDetailAPIView.as_view(), name='api_news_detail'),
+    path('api/breaking/', legacy_views.BreakingNewsAPIView.as_view(), name='api_breaking'),
+    path('api/featured/', legacy_views.FeaturedArticlesAPIView.as_view(), name='api_featured'),
+    path('api/categories/', legacy_views.CategoriesAPIView.as_view(), name='api_categories'),
+    path('api/tags/', legacy_views.TagsAPIView.as_view(), name='api_tags'),
+    path('api/authors/', legacy_views.AuthorsAPIView.as_view(), name='api_authors'),
+    path('api/health/', legacy_views.health_check, name='api_health'),
 ]

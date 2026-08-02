@@ -12,6 +12,10 @@ class User(AbstractUser):
         ('reader', 'قارئ'),
     ]
     
+    # `role` is the single source of truth for what a user can do — it used
+    # to be duplicated with is_editor/is_reporter booleans that could drift
+    # out of sync with it (e.g. role='admin' but is_editor=False). Role-based
+    # checks live in accounts/permissions.py.
     role = models.CharField(
         max_length=20, 
         choices=ROLE_CHOICES, 
@@ -22,11 +26,7 @@ class User(AbstractUser):
     bio = models.TextField(blank=True, null=True, verbose_name="السيرة الذاتية")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="رقم الهاتف")
     avatar = models.URLField(blank=True, null=True, verbose_name="صورة الملف الشخصي")
-    
-    # Permissions
-    is_editor = models.BooleanField(default=False, verbose_name="محرر")
-    is_reporter = models.BooleanField(default=False, verbose_name="مراسل")
-    
+
     class Meta:
         db_table = 'accounts_user'
         verbose_name = "مستخدم"
